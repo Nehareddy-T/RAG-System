@@ -15,6 +15,6 @@ PGPASSWORD = os.getenv("PGPASSWORD", "ragpass")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "800"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "120"))
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "300"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "30"))
 TOP_K = int(os.getenv("TOP_K", "5"))
