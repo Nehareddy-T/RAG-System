@@ -1,7 +1,9 @@
 import re
 from typing import List, Tuple
 from src.core.config import CHUNK_SIZE, CHUNK_OVERLAP
+from src.core.logging import get_logger
 
+logger = get_logger("splitter")
 SENTENCE_SPLIT = re.compile(r"(?<=[.?!|])\s+")
 
 def split_with_overlap(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
@@ -27,6 +29,7 @@ def split_with_overlap(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = C
     return chunks
 
 def enumerate_chunks(doc_id: str, text: str) -> List[Tuple[str, int, str]]:
+    logger.info(f"Chunking with size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}")
     out = []
     for idx, ch in enumerate(split_with_overlap(text)):
         out.append((doc_id, idx, ch))
