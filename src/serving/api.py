@@ -1,20 +1,18 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from jinja2 import Environment, FileSystemLoader
 from src.core.config import PORT, TOP_K
 from src.core.logging import get_logger
-from src.ingest.extractor_pdfplumber import PdfPlumberExtractor
+from src.ingest.extractor_combined import CombinedExtractor
 from src.chunking.splitter import enumerate_chunks
 from src.embedding.embedder_gemini import GeminiEmbedder
 from src.store.repository import upsert_chunks
 from src.retrieval.retriever import retrieve
+from src.answer.compose import compose_answer
 
 logger = get_logger("api")
 app = FastAPI()
-env = Environment(loader=FileSystemLoader("src/prompts"))
-_template = env.get_template("answer.jinja")
 _embedder = GeminiEmbedder()
-_extractor = PdfPlumberExtractor()
+_extractor = CombinedExtractor()
 
 class IngestRequest(BaseModel):
     doc_id: str
@@ -37,9 +35,33 @@ def ingest(req: IngestRequest):
     logger.info(f"Ingested {count} chunks for {req.doc_id}")
     return {"doc_id": req.doc_id, "chunks": count}
 
-@app.post("/query")
+"""@app.post("/query")
 def query(req: QueryRequest):
     tk = req.top_k or TOP_K
     ctx = retrieve(req.question, tk)
-    rendered = _template.render(question=req.question, chunks=ctx)
-    return {"answer": rendered.strip(), "sources": ctx}
+    if not ctx:
+        return {"answer": "I don't know", "sources": [ ]}
+    answer_text = " ".join(c["chunk_text"].strip() for c in ctx)
+    sources = " ".join([f"{c['doc_id']}:{c['chunk_index']}" for c in ctx])
+    return {"answer": answer_text, "sources": sources}"""
+
+@app.post("/query")
+def query(req: QueryRequest):
+    top_k = req.top_k or TOP_K
+
+    # 🔍 Retrieve top-k most relevant chunks
+    ctx = retrieve(req.question, top_k)
+
+    # If no chunks found above similarity threshold
+    if not ctx:
+        logger.warning("No relevant chunks found. Returning 'I don't know.'")
+        return {"answer": "I don't know", "sources": []}
+
+    # 🧠 Generate a grounded answer using Gemini
+    answer = compose_answer(req.question, ctx)
+
+    # Collect citation sources for transparency
+    sources = [f"{c['doc_id']}:{c['chunk_index']}" for c in ctx]
+
+    logger.info(f"Answered query with {len(sources)} sources.")
+    return {"answer": answer, "sources": sources} 
