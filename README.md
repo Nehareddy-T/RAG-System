@@ -147,8 +147,8 @@ After extraction, the system:
 ```bash
 #1 Clone the repository
 
-git clone https://github.com/<Nehareddy-T>/tiny-rag.git
-cd tiny-rag
+git clone https://github.com/Nehareddy-T/RAG-System.git
+cd RAG-System
 
 #2 Create and activate virtual environment
 
