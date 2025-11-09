@@ -37,14 +37,6 @@ class QueryRequest(BaseModel):
 def health():
     return {"status": "ok"}
 
-"""@app.post("/ingest")
-def ingest(req: IngestRequest):
-    text = _extractor.extract(req.file_path)
-    rows = enumerate_chunks(req.doc_id, text)
-    vecs = _embedder.embed([r[2] for r in rows])
-    count = upsert_chunks(req.doc_id, rows, vecs)
-    logger.info(f"Ingested {count} chunks for {req.doc_id}")
-    return {"doc_id": req.doc_id, "chunks": count}"""
 @app.post("/ingest")
 def ingest(req: IngestRequest):
     try:
@@ -69,28 +61,6 @@ def ingest(req: IngestRequest):
     except Exception as e:
         logger.error(f"Ingestion failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to ingest document.")
-
-
-"""@app.post("/query")
-def query(req: QueryRequest):
-    top_k = req.top_k or TOP_K
-
-    # 🔍 Retrieve top-k most relevant chunks
-    ctx = retrieve(req.question, top_k)
-
-    # If no chunks found above similarity threshold
-    if not ctx:
-        logger.warning("No relevant chunks found. Returning 'I don't know.'")
-        return {"answer": "I don't know", "sources": []}
-
-    # 🧠 Generate a grounded answer using Gemini
-    answer = compose_answer(req.question, ctx)
-
-    # Collect citation sources for transparency
-    sources = [f"{c['doc_id']}:{c['chunk_index']}" for c in ctx]
-
-    logger.info(f"Answered query with {len(sources)} sources.")
-    return {"answer": answer, "sources": sources} """
 
 @app.post("/query")
 def query(req: QueryRequest):
