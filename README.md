@@ -36,9 +36,6 @@ After extraction, the system:
 ---
 ## 🏗️ Architecture
 
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                           TINY-RAG SYSTEM PIPELINE                           │
-└──────────────────────────────────────────────────────────────────────────────┘
 
                                 ┌──────────┐
                                 │ PDF File │
@@ -140,7 +137,7 @@ After extraction, the system:
 
 - Google Gemini API Key: set in .env
 
-- Virtual Environment (recommended)
+- Code editor--VS Code (recommended)
 
 ---
 ## Installation
@@ -188,14 +185,28 @@ docker exec -it ragdb psql -U raguser -d ragdb -f src/store/schema.sql
 ```
 ---
 ## ⚙️ Scripted Run Commands
-The project includes a `Makefile` with automated commands for setup and execution:
+The project includes a `Makefile` with automated commands for setup and execution on Mac:
 ```bash
 make install     # install dependencies
 make db-up       # start the pgvector database
 make run-api     # start the FastAPI server
 make ingest      # ingest sample.pdf
 make query       # query the RAG pipeline
+make run-all     # db-up install run-api
 ```
+*For Windows Users*
+
+If you run into one of the following errors while running make:
+
+bash: .: command not found
+
+command separator '&&' not recognized
+
+It means your shell doesn’t support Linux-style commands.
+Run the equivalent steps manually in PowerShell
+
+**Pro tip:** For Windows users, open your terminal as “Git Bash” instead of PowerShell for full Makefile support.
+
 ---
 ## Usage
 
@@ -326,9 +337,19 @@ Press control+c on keyboard for Application shutdown
 
 All logs are unified under src/core/logging.py with consistent formats:
 ```
+2025-11-09 19:35:28,469 | INFO | CombinedExtractor | Attempting Gemini extraction for data/sample.pdf
+2025-11-09 19:35:30,177 | INFO | GeminiExtractor | Uploaded file to Gemini: https://generativelanguage.googleapis.com/v1beta/files/ki042x0r5l4o
+2025-11-09 19:35:43,536 | INFO | GeminiExtractor | Gemini extracted 11432 characters of text.
+2025-11-09 19:35:43,537 | INFO | CombinedExtractor | Gemini extraction successful.
+2025-11-09 19:35:43,537 | INFO | splitter | Chunking with size=300, overlap=30
+2025-11-09 19:35:44,317 | ERROR | db | ❌ Database connection failed: Unable to reach Postgres at localhost:5432. Ensure Docker is running and the pgvector container is active.
+
+2025-11-09 20:08:11,825 | INFO | repository | Inserted 53 chunks for document 'resume' into the database
+
 2025-11-09 13:40:15,156 | INFO | cli_query | Query received: What experience does Neha have? (top_k=5)
 2025-11-09 13:40:16,337 | INFO | composer | Generated grounded answer (216 chars)
 2025-11-09 13:40:16,337 | INFO | cli_query | Answered with 2 supporting chunks.
+
 ```
 ---
 ## 🔒 Security
@@ -361,6 +382,35 @@ SELECT id, LEFT(chunk_text, 80) FROM documents LIMIT 5;
 - A global exception handler catches any unhandled errors and returns safe, JSON-formatted responses instead of raw Python tracebacks.
 
 - Each error is logged internally with full details for debugging, but only concise, user-friendly messages are returned to clients.
+
+
+### ✅ Exceptions Handled
+
+| Exception Type | Description | API Response |
+|----------------|-------------|---------------|
+| **FileNotFoundError** | Triggered when the provided file path in `/ingest` does not exist. | `404 File not found` |
+| **ValueError** | Raised when the PDF is invalid or no text is extracted (e.g., empty or scanned-only document). | `400 Bad Request` |
+| **Database Connection Errors (Postgres / Docker Down)** | Occurs when Postgres + pgvector is not running or unreachable. Logs a clear, actionable message instead of a long traceback. | `500 Internal Server Error` |
+| **No Relevant Chunks Found** | When retrieval returns no chunks above the similarity threshold. | Returns `"I don't know"` with empty sources |
+| **Unhandled Runtime Errors** | Any other unexpected error is caught by the global FastAPI exception handler. | `500 Internal server error` |
+
+---
+
+### 🗄️ Database Connection Errors (Postgres / Docker Down)
+
+If the Postgres + pgvector database is not running or cannot be reached, the system logs a **clear, actionable message** instead of a raw traceback.
+
+**Example Output**
+```bash
+2025-11-09 19:35:44,317 | ERROR | db | ❌ Database connection failed: Unable to reach Postgres at localhost:5432. Ensure Docker is running and the pgvector container is active.
+
+[ERROR] Could not connect to the Postgres database.
+Reason: connection failed: connection to server at "127.0.0.1", port 5432 failed: could not receive data from server: Connection refused
+
+👉 To fix this, make sure your database container is running:
+   docker compose up -d
+```
+
 ---
 ## Limitations
 - **Single-Document Scope:**
