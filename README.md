@@ -206,7 +206,25 @@ It means your shell doesn’t support Linux-style commands.
 Run the equivalent steps manually in PowerShell
 
 **Pro tip:** For Windows users, open your terminal as “Git Bash” instead of PowerShell for full Makefile support.
+```bash
+#1. Clone the repository
+git clone https://github.com/Nehareddy-T/RAG-System.git
+cd RAG-System
 
+#2. Copy and configure environment
+cp .env.example .env
+
+#3. then open the .env file and update:
+GEMINI_API_KEY=your_api_key_here
+
+#4. Run from terminal, inside RAG-System %
+make run-all 
+# This starts the docker container ragdb, creates virtual env, installs all the requirements and starts the server. 
+
+#5  Now open the new terminal(do not close the current running terminal) and run
+ make ingest
+ make query
+```
 ---
 ## Usage
 
