@@ -1,16 +1,22 @@
 # =========================
-# Tiny-RAG Makefile
+# Tiny-RAG Makefile (Cross-Platform)
 # =========================
 
-# === Environment Variables ===
 ENV_FILE=.env
-PYTHON=python3
 
-# Detect OS (Windows_NT for Windows)
+# Detect environment and set Python + Activate command
 ifeq ($(OS),Windows_NT)
-	ACTIVATE = venv\Scripts\activate
+    # If running inside Git Bash, MSYSTEM is defined
+    ifdef MSYSTEM
+        PYTHON=python
+        ACTIVATE=source venv/Scripts/activate
+    else
+        PYTHON=python
+        ACTIVATE=venv\Scripts\activate
+    endif
 else
-	ACTIVATE = . venv/bin/activate
+    PYTHON=python3
+    ACTIVATE=source venv/bin/activate
 endif
 
 # === Setup Commands ===
